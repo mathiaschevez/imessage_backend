@@ -10,6 +10,11 @@ import typeDefs from './graphql/typeDefs';
 import resolvers from './graphql/resolvers';
 import * as dotenv from 'dotenv'
 import { getSession } from 'next-auth/react'
+import { GraphQLContext, Session } from './util/types';
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+// const pubsub
 
 async function main() {
   dotenv.config()
@@ -36,10 +41,10 @@ async function main() {
     cors<cors.CorsRequest>(corsOptions),
     bodyParser.json({ limit: '50mb' }),
     expressMiddleware(server, {
-      context: async ({ req }) => {
-        const session = await getSession({ req })
+      context: async ({ req }): Promise<GraphQLContext> => {
+        const session = await getSession({ req }) as Session
 
-        return { session: session }
+        return { session, prisma }
       },
     }),
   );

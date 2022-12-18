@@ -1,26 +1,55 @@
+import { CreateUsernameResponse, GraphQLContext } from "../../util/types";
+
 const resolvers = {
   Query: {
-    users: () => users,
     searchUsers: () => {},
   },
   Mutation: {
-    createUsername: (_: any, args: { username: string }, context: any) => {
+    createUsername: async (
+      _: any, 
+      args: { username: string }, 
+      context: GraphQLContext
+    ): Promise<CreateUsernameResponse> => {
       const { username } = args
-      console.log('HERE AT THE API', username)
-      console.log(context)
+      const { session, prisma } = context
+
+      if(!session?.user) {
+        return {
+          error: 'Not authorized'
+        }
+      }
+
+      const { id: userId } = session.user
+
+      try {
+        // Check if username is available
+        const existingUser = await prisma.user.findUnique({
+          where: { username },
+        })
+
+        if(existingUser) {
+          return {
+            error: 'Username already taken. Try another'
+          }
+        }
+
+        // Update user 
+        await prisma.user.update({
+          where: { id: userId },
+          data: {
+            username
+          }
+        })
+
+        return { success: true }
+      } catch (err: any) {
+        console.log('Create username error', err)
+        return {
+          error: err?.message
+        }
+      }
     },
   },
 }
-
-const users = [
-  {
-    id: 'The Awakening',
-    username: 'Kate Chopin',
-  },
-  {
-    id: 'City of Glass',
-    username: 'Paul Auster',
-  },
-];
 
 export default resolvers
