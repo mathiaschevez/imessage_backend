@@ -6,9 +6,10 @@ import express from 'express';
 import http from 'http';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import typeDefs from './graphql/typeDefs/index.js';
-import resolvers from './graphql/resolvers/index.js';
+import typeDefs from './graphql/typeDefs';
+import resolvers from './graphql/resolvers';
 import * as dotenv from 'dotenv'
+import { getSession } from 'next-auth/react'
 
 async function main() {
   dotenv.config()
@@ -35,7 +36,11 @@ async function main() {
     cors<cors.CorsRequest>(corsOptions),
     bodyParser.json({ limit: '50mb' }),
     expressMiddleware(server, {
-      context: async ({ req }) => ({ token: req.headers.token }),
+      context: async ({ req }) => {
+        const session = await getSession({ req })
+
+        return { session: session }
+      },
     }),
   );
 
